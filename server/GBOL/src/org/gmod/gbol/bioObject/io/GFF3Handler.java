@@ -26,7 +26,9 @@ import org.gmod.gbol.bioObject.CDS;
 import org.gmod.gbol.bioObject.Comment;
 import org.gmod.gbol.bioObject.Exon;
 import org.gmod.gbol.bioObject.GenericFeatureProperty;
+import org.gmod.gbol.bioObject.Match;
 import org.gmod.gbol.bioObject.util.BioObjectUtil;
+import org.gmod.gbol.bioObject.conf.BioObjectConfiguration;
 import org.gmod.gbol.simpleObject.DBXref;
 import org.gmod.gbol.simpleObject.Feature;
 import org.gmod.gbol.simpleObject.FeatureLocation;
@@ -95,7 +97,7 @@ public class GFF3Handler {
             throw new IOException("Cannot write to file in READ mode");
         }
         if (firstEntry) {
-            out.println("##gff-version 3");
+            writeGff3Directive();
             firstEntry = false;
         }
         Map<Feature, Collection<AbstractSingleLocationBioFeature>> featuresBySource = new HashMap<Feature, Collection<AbstractSingleLocationBioFeature>>();
@@ -117,12 +119,44 @@ public class GFF3Handler {
         }
     }
     
+    public void writeMatch(Match match, String source, BioObjectConfiguration conf) throws IOException {
+        String subjectStrand = (match.getSubjectStrand() == 1) ? "+" : ((match.getSubjectStrand() == -1) ? "-" : ".");
+        String classTerm = "match_part";
+        String rawScore = ".";
+        if (match.getRawScore() != null) {
+            classTerm = "match";
+            rawScore = match.getRawScore().toString();
+        }
+        if (firstEntry) {
+            writeGff3Directive();
+            firstEntry = false;
+        }
+        GFF3Entry entry = new GFF3Entry(match.getSubjectUniqueName(), source,
+                classTerm, match.getSubjectFmin(), match.getSubjectFmax(),
+                rawScore, subjectStrand, ".");
+        if (classTerm.equals("match")) {
+            entry.addAttribute("ID", match.getQueryUniqueName());
+            entry.addAttribute("identity", match.getIdentity().toString());
+        } else {
+            entry.addAttribute("Parent", match.getQueryUniqueName());
+        }
+        entry.addAttribute("Target", match.getQueryUniqueName() + " " + match.getQueryFmin().toString() + " " + match.getQueryFmax());
+
+        out.println(entry.toString());
+    }
+
+    public void writeMatches(Collection <Match> matches, String source, BioObjectConfiguration conf) throws IOException {
+        for (Match match : matches) {
+            writeMatch(match, source, conf);
+        }
+    }
+
     public void writeFeatures(Iterator<? extends AbstractSingleLocationBioFeature> iterator, String source, boolean needDirectives) throws IOException {
         if (mode != Mode.WRITE) {
             throw new IOException("Cannot write to file in READ mode");
         }
         if (firstEntry) {
-            out.println("##gff-version 3");
+            writeGff3Directive();
             firstEntry = false;
         }
         while (iterator.hasNext()) {
@@ -149,6 +183,10 @@ public class GFF3Handler {
         out.println("##FASTA");
     }
     
+    private void writeGff3Directive() {
+        out.println("##gff-version 3");
+    }
+
     private void writeFeature(AbstractSingleLocationBioFeature feature, String source) {
         for (GFF3Entry entry : convertToEntry(feature, source)) {
             out.println(entry.toString());

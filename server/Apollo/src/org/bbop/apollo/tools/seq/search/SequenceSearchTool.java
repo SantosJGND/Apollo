@@ -26,10 +26,10 @@ public abstract class SequenceSearchTool {
     
     public abstract void parseConfiguration(InputStream config) throws SequenceSearchToolException;
     
-    public abstract Collection<Match> search(String uniqueToken, String query, String databaseId) throws SequenceSearchToolException;
+    public abstract Collection<Match> search(String uniqueToken, String query, String databaseId, String servletRealPath) throws SequenceSearchToolException;
     
-    public Collection<Match> search(String uniqueToken, String query) throws SequenceSearchToolException {
-        return search(uniqueToken, query, null);
+    public Collection<Match> search(String uniqueToken, String query, String servletRealPath) throws SequenceSearchToolException {
+        return search(uniqueToken, query, null, servletRealPath);
     }
     
 }

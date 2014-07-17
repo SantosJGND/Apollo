@@ -19,7 +19,7 @@ public class BlatCommandLineTest extends TestCase {
         BlatCommandLine blat = new BlatCommandLineNucleotideToNucleotide();
         blat.setBioObjectConfiguration(conf);
         blat.parseConfiguration("testSupport/blat_config.xml");
-        for (Match match : blat.search("TCGTTTCGATTAAATGTTCCATTCGTAACATCTCACTGAAAGGGGTTGCCAAGTATTATTGTCTGAAACT", "Group1.33")) {
+        for (Match match : blat.search("TCGTTTCGATTAAATGTTCCATTCGTAACATCTCACTGAAAGGGGTTGCCAAGTATTATTGTCTGAAACT", "Group1.33", null)) {
             assertEquals("Query fmin", new Integer(0), match.getQueryFmin());
             assertEquals("Query fmax", new Integer(69), match.getQueryFmax());
             assertEquals("Query strand", new Integer(1), match.getQueryStrand());

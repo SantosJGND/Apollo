@@ -88,11 +88,12 @@ SequenceSearch.prototype.searchSequence = function(trackName, refSeqName, starts
     	}
     	var searchAllRefSeqs = dojo.attr(searchAllRefSeqsCheckbox, "checked");
     	if (ok) {
+    		var ts = Date.now();
     		dojo.style(waitingDiv, { display: "block"} );
     		dojo.style(matchDiv, { display: "none"} );
-    	    dojo.style(headerDiv, { display: "none" });
-    	    dojo.xhrPost( {
-    			postData: '{ "track": "' + trackName + '", "search": { "key": "' + sequenceToolsSelect.value + '", "residues": "' + residues + (!searchAllRefSeqs && refSeqName != null ? '", "database_id": "' + refSeqName : '') + '"}, "operation": "' + operation + '" }', 
+    		dojo.style(headerDiv, { display: "none" });
+    		dojo.xhrPost( {
+    			postData: '{ "track": "' + trackName + '", "search": { "timestamp": "' + ts + '", "key": "' + sequenceToolsSelect.value + '", "residues": "' + residues + (!searchAllRefSeqs && refSeqName != null ? '", "database_id": "' + refSeqName : '') + '"}, "operation": "' + operation + '" }', 
     			url: contextPath + "/AnnotationEditorService",
     			handleAs: "json",
     			timeout: 5000 * 1000, // Time in milliseconds
@@ -110,13 +111,13 @@ SequenceSearch.prototype.searchSequence = function(trackName, refSeqName, starts
     				dojo.style(messageDiv, { display: "none" });
     				dojo.style(headerDiv, { display: "block"} );
     				dojo.style(matchDiv, { display: "block"} );
-    				
+
     				var returnedMatches = response.matches;
     				returnedMatches.sort(function(match1, match2) {
     					return match2.rawscore - match1.rawscore;
     				});
     				var maxNumberOfHits = 100;
-    				
+
     				for (var i = 0; i < returnedMatches.length && i < maxNumberOfHits; ++i) {
     					var match = returnedMatches[i];
     					var query = match.query;
@@ -142,11 +143,11 @@ SequenceSearch.prototype.searchSequence = function(trackName, refSeqName, starts
     					var scoreColumn = dojo.create("span", { innerHTML: match.rawscore, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
     					var significanceColumn = dojo.create("span", { innerHTML: match.significance, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
     					var identityColumn = dojo.create("span", { innerHTML : match.identity, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-    					dojo.connect(row, "onclick", function(id, fmin, fmax) {
+    					dojo.connect(row, "onclick", function(id, fmin, fmax, ts) {
     						return function() {
-    							redirectCallback(id, fmin, fmax);
+    							redirectCallback(id, fmin, fmax, ts);
     						};
-    					}(subject.feature.uniquename, subject.location.fmin, subject.location.fmax));
+    					}(subject.feature.uniquename, subject.location.fmin, subject.location.fmax, ts));
     				}
     			},
     			// The ERROR function will be called in an error case.

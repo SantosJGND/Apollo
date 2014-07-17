@@ -336,27 +336,34 @@ function open_search_dialog() {
     var search = new SequenceSearch(".");
     var starts = new Object();
 <%
-    for (ServerConfiguration.TrackConfiguration track : serverConfig.getTracks().values()) {
-        out.println(String.format("starts['%s'] = %d;", track.getSourceFeature().getUniqueName(), track.getSourceFeature().getStart()));
-    }
-%>    
-    search.setRedirectCallback(function(id, fmin, fmax) {
-         var flank = Math.round((fmax - fmin) * 0.2);
-         var url = 'jbrowse/?loc=' + id + ":" + (fmin-flank) + ".." + (fmax+flank)+"&highlight="+id+":"+(fmin+1) + ".." + fmax;
-         window.open(url);
-    });
-    search.setErrorCallback(function(response) {
-        var error = eval('(' + response.responseText + ')');
-        if (error && error.error) {
-            alert(error.error);
-        }
-    });
-    var content = search.searchSequence(trackName, null, starts);
-    if (content) {
-        $("#search_sequences_dialog").show();
-        $("#search_sequences_dialog").html(content);
-        $("#search_sequences_dialog").dialog("open");
-    }
+	for (ServerConfiguration.TrackConfiguration track : serverConfig.getTracks().values()) {
+		out.println(String.format("starts['%s'] = %d;", track.getSourceFeature().getUniqueName(), track.getSourceFeature().getStart()));
+	}
+%>	
+	search.setRedirectCallback(function(id, fmin, fmax, ts) {
+		 var flank = Math.round((fmax - fmin) * 0.2);
+		 var url = '<%= new URL(request.getRequestURL().toString())%>';
+		 var urlroot = url.substring(0, url.lastIndexOf("/"));
+         var addStore = 'addStores={"url":{"type":"JBrowse/Store/SeqFeature/GFF3","urlTemplate":"' +
+				urlroot + '/tmp/<%=session.getId()%>_' + ts + '/results.gff' +
+				'"}}&addTracks=[{"label":"SearchResults","type":"JBrowse/View/Track/HTMLFeatures","store":"url"}]' + 
+				'&tracks=SearchResults';
+
+		 var url = 'jbrowse/?loc=' + id + ":" + (fmin-flank) + ".." + (fmax+flank)+"&highlight="+id+":"+(fmin+1) + ".." + fmax + '&' + addStore;
+		 window.open(url);
+	});
+	search.setErrorCallback(function(response) {
+		var error = eval('(' + response.responseText + ')');
+		if (error && error.error) {
+			alert(error.error);
+		}
+	});
+	var content = search.searchSequence(trackName, null, starts);
+	if (content) {
+		$("#search_sequences_dialog").show();
+		$("#search_sequences_dialog").html(content);
+		$("#search_sequences_dialog").dialog("open");
+	}
 };
 
 function update_checked(checked) {
