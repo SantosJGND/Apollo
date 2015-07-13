@@ -9,4 +9,9 @@ class AlternativeLoci {
     String name
     long start
     long end
+
+    static mapping = {
+        end column: "sequence_end"
+        start column: "sequence_start"
+    }
 }
