@@ -7,9 +7,7 @@ import spock.lang.Ignore
 
 class AnnotationEditorControllerIntegrationSpec extends IntegrationSpec {
 
-    //def anotationEditorController
-    def requestHandlingService
-    
+
     def setup() {
         Sequence refSequence = new Sequence(
                 length: 1000
@@ -98,12 +96,8 @@ class AnnotationEditorControllerIntegrationSpec extends IntegrationSpec {
         String jsonString = "{ \"track\": \"chr1\", \"features\": [ { \"uniquename\": \"abc123-gene\" } ], \"operation\": \"get_gff3\" }"
         JSONParser parser = new JSONParser(new StringReader(jsonString))
         JSONObject jsonObject = (JSONObject) parser.parseJSON()
-//        log.debug "===> JSONOBJECT: ${jsonObject}"
-//        params.data = jsonObject.toString()
 
-        
         then: "we should have GFF3 of the requested feature"
         String responseString = controller.response.contentAsString
-        
     }
 }

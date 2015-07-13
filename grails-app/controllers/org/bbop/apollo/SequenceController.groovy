@@ -23,10 +23,6 @@ class SequenceController {
     def permissionService
     def preferenceService
 
-
-    // see #464
-    private Map<String,DownloadFile> fileMap = new HashMap<>()
-
     def permissions() {  }
 
 

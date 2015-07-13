@@ -1,10 +1,5 @@
 {
-    "plugins" : [
-      {
-         "location" : "./plugins/WebApollo",
-         "name" : "WebApollo"
-      }
-   ],
+    "plugins" : ["WebApollo","LLSA"],
     "share_link" : 0,
     "tracks" : [
     {
