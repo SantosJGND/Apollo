@@ -222,12 +222,12 @@ apollo {
         data_adapters: [[
             permission: 1,
             key: "Only GFF3",
-            options: "output=file&format=gzip&type=GFF3&exportSequence=false"
+            options: "output=file&format=gzip&type=GFF3&exportGff3Fasta=false"
         ],
         [
             permission: 1,
             key: "GFF3 with FASTA",
-            options: "output=file&format=gzip&type=GFF3&exportSequence=true"
+            options: "output=file&format=gzip&type=GFF3&exportGff3Fasta=true"
         ]]
     ],
     [
@@ -271,6 +271,11 @@ apollo {
             ['label': "Canned Comments", 'link': "/cannedComment/"]
             ,['label': "Feature Types", 'link': "/featureType/"]
             ,['label': "Statuses", 'link': "/availableStatus/"]
+            ,['label': "Report::Organisms", 'link': "/organism/report/"]
+            ,['label': "Report::Sequences", 'link': "/sequence/report/"]
+            ,['label': "Report::Annotator", 'link': "/annotator/report/"]
+            ,['label': "System Info", 'link': "/home/systemInfo/"]
+//            ,['label': "Report::Changes", 'link': "/annotator/changes/"]
     ]
 
     // customize new tabs on the annotator panel with these links

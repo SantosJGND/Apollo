@@ -5,6 +5,7 @@ import org.bbop.apollo.gwt.shared.FeatureStringEnum
 
 import grails.converters.JSON
 import org.apache.shiro.crypto.hash.Sha256Hash
+import org.bbop.apollo.report.AnnotatorSummary
 import org.codehaus.groovy.grails.web.json.JSONArray
 import org.codehaus.groovy.grails.web.json.JSONObject
 import org.bbop.apollo.gwt.shared.PermissionEnum
@@ -326,4 +327,5 @@ class UserController {
 
         render userOrganismPermission as JSON
     }
+
 }
