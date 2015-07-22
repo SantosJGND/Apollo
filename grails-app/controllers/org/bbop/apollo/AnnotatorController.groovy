@@ -88,10 +88,7 @@ class AnnotatorController {
     def updateFeature() {
         log.info "updating feature ${params.data}"
         def data = JSON.parse(params.data.toString()) as JSONObject
-        log.info "uqnieuname 2: ${data.uniquename}"
-        log.info "rendered data ${data as JSON}"
         Feature feature = Feature.findByUniqueName(data.uniquename)
-        log.info "foiund feature: " + feature
 
         feature.name = data.name
         feature.symbol = data.symbol
@@ -99,7 +96,6 @@ class AnnotatorController {
 
         feature.save(flush: true, failOnError: true)
 
-        log.info "saved!! "
 
         JSONObject updateFeatureContainer = createJSONFeatureContainer();
         if (feature instanceof Gene) {
@@ -130,8 +126,6 @@ class AnnotatorController {
     def updateFeatureLocation() {
         log.info "updating exon ${params.data}"
         def data = JSON.parse(params.data.toString()) as JSONObject
-        log.info "uqnieuname 2: ${data.uniquename}"
-        log.info "rendered data ${data as JSON}"
         Feature exon = Feature.findByUniqueName(data.uniquename)
         exon.featureLocation.fmin = data.fmin
         exon.featureLocation.fmax = data.fmax
@@ -189,7 +183,7 @@ class AnnotatorController {
             Integer index = Integer.parseInt(request)
 
             // TODO: should only be returning the top-level features
-            List<Feature> allFeatures
+            List<Feature> allFeatures=new ArrayList<Feature>
             Integer annotationCount = 0
 
             List<String> viewableTypes
@@ -234,35 +228,18 @@ class AnnotatorController {
 
             if (organism) {
                 if (!sequence) {
-                    try {
-                        final long start = System.currentTimeMillis();
-                        allFeatures = Feature.executeQuery("select distinct f, abs(fl.fmax-fl.fmin) as seqLength, s from Feature f join f.owners own left join f.parentFeatureRelationships pfr  join f.featureLocations fl join fl.sequence s join s.organism o  where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes) and f.name like :annotationName and own.username like :username " + sortString, [organism: organism, viewableTypes: viewableTypes, offset: offset, max: max, annotationName: '%' + annotationName + "%", username: '%' + user + '%']).collect {
-                            it[0]
-                        }
-                        annotationCount = (Integer) Feature.executeQuery("select count(distinct f) from Feature f join f.owners own left join f.parentFeatureRelationships pfr  join f.featureLocations fl join fl.sequence s join s.organism o  where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes)  and f.name like :annotationName and own.username like :username ", [organism: organism, viewableTypes: viewableTypes, annotationName: '%' + annotationName + '%', username: '%' + user + '%']).iterator().next()
-                        final long durationInMilliseconds = System.currentTimeMillis() - start;
-
-                        log.debug "selecting features all ${durationInMilliseconds}"
-                    } catch (e) {
-                        allFeatures = new ArrayList<>()
-                        log.error(e)
+                    allFeatures = Feature.executeQuery("select distinct f, abs(fl.fmax-fl.fmin) as seqLength, s from Feature f join f.owners own left join f.parentFeatureRelationships pfr  join f.featureLocations fl join fl.sequence s join s.organism o  where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes) and f.name like :annotationName and own.username like :username " + sortString, [organism: organism, viewableTypes: viewableTypes, offset: offset, max: max, annotationName: '%' + annotationName + "%", username: '%' + user + '%']).collect {
+                        it[0]
                     }
+                    annotationCount = (Integer) Feature.executeQuery("select count(distinct f) from Feature f join f.owners own left join f.parentFeatureRelationships pfr  join f.featureLocations fl join fl.sequence s join s.organism o  where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes)  and f.name like :annotationName and own.username like :username ", [organism: organism, viewableTypes: viewableTypes, annotationName: '%' + annotationName + '%', username: '%' + user + '%']).iterator().next()
                 } else {
-                    final long start = System.currentTimeMillis();
                     allFeatures = Feature.executeQuery("select distinct f, abs(fl.fmax-fl.fmin) as seqLength, s from Feature f join f.owners own left join f.parentFeatureRelationships pfr join f.featureLocations fl join fl.sequence s join s.organism o where s.name = :sequenceName and f.childFeatureRelationships is empty  and f.name like :annotationName and o = :organism  and f.class in (:viewableTypes)  and own.username like :username " + sortString, [sequenceName: sequenceName, organism: organism, viewableTypes: viewableTypes, offset: offset, max: max, annotationName: '%' + annotationName + "%", username: '%' + user + '%']).collect { it[0]}
                     annotationCount = (Integer) Feature.executeQuery("select count(distinct f) from Feature f  join f.owners own left join f.parentFeatureRelationships pfr join f.featureLocations fl join fl.sequence s join s.organism o where s.name = :sequenceName and f.childFeatureRelationships is empty  and f.name like :annotationName and o = :organism  and f.class in (:viewableTypes)  and own.username like :username ", [sequenceName: sequenceName, organism: organism, viewableTypes: viewableTypes, annotationName: '%' + annotationName + "%", username: '%' + user + '%']).iterator().next()
-                    final long durationInMilliseconds = System.currentTimeMillis() - start;
-
-                    log.debug "selecting features ${durationInMilliseconds}"
                 }
-                final long start = System.currentTimeMillis();
                 for (Feature feature in allFeatures) {
                     JSONObject featureObject = featureService.convertFeatureToJSON(feature, false)
                     returnObject.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureObject)
                 }
-                final long durationInMilliseconds = System.currentTimeMillis() - start;
-
-                log.debug "convert to json ${durationInMilliseconds}"
             }
 
             returnObject.put(FeatureStringEnum.REQUEST_INDEX.getValue(), index + 1)
@@ -271,11 +248,16 @@ class AnnotatorController {
             // TODO: do checks here
             render returnObject
         }
+        catch (PermissionException e) {
+            def error = [error: e.message]
+            log.warn "No permissions: "+e.message
+            render error as JSON
+        }
         catch (Exception e) {
             def error = [error: e.message]
-            log.error e.message
+            log.error "Other exception: "+e.message
             e.printStackTrace()
-            render e as JSON
+            render error as JSON
         }
 
     }

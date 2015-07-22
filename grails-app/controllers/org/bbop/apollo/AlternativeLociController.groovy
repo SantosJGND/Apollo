@@ -7,6 +7,11 @@ import grails.transaction.Transactional
 class AlternativeLociController {
 
 
+    static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+
+    def permissionService
+
+
     def addLoci() {
         log.debug "addLoci ${params}"
 
@@ -19,9 +24,14 @@ class AlternativeLociController {
     }
 
 
-        static allowedMethods = [save: "POST", update: "PUT", delete: "DELETE"]
+    def getLoci() {
+        log.debug "getLoci ${params}"
 
-    def permissionService
+        render AlternativeLoci.findAll().collect() { it ->
+            [start: it.start, end: it.end, name: it.name]
+        } as JSON
+    }
+
 
     def beforeInterceptor = {
         if(!permissionService.isAdmin()){
