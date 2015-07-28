@@ -1,0 +1,21 @@
+.setLLSA form {
+    width: 20%;
+    margin: 0 auto;
+    float: left;
+}
+
+.setLLSA label, input {
+    /* in order to define widths */
+    display: inline-block;
+}
+
+.setLLSA label {
+    width: 30%;
+}
+
+.setLLSA label + input {
+    width: 30%;
+    /* large margin-right to force the next element to the new-line
+       and margin-left to create a gutter between the label and input */
+    margin: 0 30% 0 0%;
+}

@@ -70,6 +70,8 @@ grails.project.dependency.resolution = {
         compile 'commons-codec:commons-codec:1.2'
         compile 'org.json:json:20140107'
         compile 'org.hibernate:hibernate-tools:3.2.0.ga'
+        compile 'com.github.samtools:htsjdk:1.129'
+
         //compile 'com.sleepycat:je:5.0.73'
         //compile 'org.spiffyui:spiffyuitasks:1.5'
         //compile 'org.spiffyui:spiffyui:1.5'
