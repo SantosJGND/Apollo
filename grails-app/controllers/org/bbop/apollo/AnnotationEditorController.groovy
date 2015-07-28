@@ -1,24 +1,21 @@
 package org.bbop.apollo
 
-
+import org.bbop.apollo.gwt.shared.FeatureStringEnum
 import org.apache.shiro.SecurityUtils
 import org.bbop.apollo.gwt.shared.PermissionEnum
 import org.bbop.apollo.sequence.SequenceTranslationHandler
 import org.bbop.apollo.sequence.TranslationTable
-import org.bbop.apollo.gwt.shared.FeatureStringEnum
-import org.bbop.apollo.event.AnnotationEvent
-import org.bbop.apollo.event.AnnotationListener
-
+import org.grails.plugins.metrics.groovy.Timed
 import org.springframework.http.HttpStatus
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.Principal
 import java.text.DateFormat
-
 import static grails.async.Promises.*
 import grails.converters.JSON
-
+import org.bbop.apollo.event.AnnotationEvent
+import org.bbop.apollo.event.AnnotationListener
 import org.codehaus.groovy.grails.web.json.JSONArray
 import org.codehaus.groovy.grails.web.json.JSONException
 import org.codehaus.groovy.grails.web.json.JSONObject
@@ -26,11 +23,9 @@ import groovy.json.JsonBuilder
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.SendTo
 
-//import grails.compiler.GrailsCompileStatic
 /**
  * From the AnnotationEditorService
  */
-//@GrailsCompileStatic
 class AnnotationEditorController extends AbstractApolloController implements AnnotationListener {
 
 
@@ -65,6 +60,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
     /**
      * @return
      */
+    @Timed
     def getUserPermission() {
         log.debug "getUserPermission ${params.data}"
         JSONObject returnObject = (JSONObject) JSON.parse(params.data)
@@ -115,6 +111,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         render jre as JSON
     }
 
+    @Timed
     def getHistoryForFeatures() {
         log.debug "getHistoryForFeatures ${params}"
         JSONObject inputObject = (JSONObject) JSON.parse(params.data)
@@ -131,7 +128,6 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
 
             JSONArray history = new JSONArray();
             jsonFeature.put(FeatureStringEnum.HISTORY.value, history);
-//            List<FeatureEvent> transactionList = FeatureEvent.findAllByUniqueName(feature.uniqueName, [sort: "dateCreated", order: "asc"])
             List<List<FeatureEvent>> transactionList = featureEventService.getHistory(feature.uniqueName)
             for (int j = 0; j < transactionList.size(); ++j) {
                 FeatureEvent transaction = transactionList[j][0];
@@ -377,6 +373,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         }
     }
 
+    @Timed
     def getInformation() {
         JSONObject featureContainer = createJSONFeatureContainer();
         JSONObject inputObject = (JSONObject) JSON.parse(params.data)
@@ -468,6 +465,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             jsonObject.put(FeatureStringEnum.USERNAME.value, username)
     }
 
+    @Timed
     def getSequenceAlterations() {
         JSONObject returnObject = (request.JSON ?: JSON.parse(params.data)) as JSONObject
 
@@ -652,7 +650,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         }
         JSONObject featureContainer = createJSONFeatureContainer()
         JSONObject sequenceObject = sequenceService.getSequenceForFeatures(inputObject)
-        featureContainer.getJSONArray("features").put(sequenceObject)
+        featureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(sequenceObject)
         render featureContainer
     }
 
@@ -709,6 +707,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         }
     }
 
+    @Timed
     def getAnnotationInfoEditorData() {
         Sequence sequence
         JSONObject inputObject = (JSONObject) JSON.parse(params.data)
@@ -728,8 +727,6 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             log.debug "input json feature ${jsonFeature}"
             String uniqueName = jsonFeature.get(FeatureStringEnum.UNIQUENAME.value)
             Feature feature = Feature.findByUniqueName(uniqueName)
-            log.debug "feature converted? ${feature}"
-            log.debug "retrieved feature ${feature.name} ${feature.uniqueName}"
             JSONObject newFeature = featureService.convertFeatureToJSON(feature, false)
 
             if (feature.symbol) newFeature.put(FeatureStringEnum.SYMBOL.value, feature.symbol)
@@ -794,6 +791,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
 
     @MessageMapping("/AnnotationNotification")
     @SendTo("/topic/AnnotationNotification")
+    @Timed
     protected String annotationEditor(String inputString, Principal principal) {
         log.debug "Input String:  annotation editor service ${inputString}"
         JSONObject rootElement = (JSONObject) JSON.parse(inputString)
@@ -806,6 +804,9 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         log.debug "operationName: ${operationName}"
         def p = task {
             switch (operationName) {
+                case "logout":
+                    SecurityUtils.subject.logout()
+                    break
                 case "setToDownstreamDonor": requestHandlingService.setDonor(rootElement, false)
                     break
                 case "setToUpstreamDonor": requestHandlingService.setDonor(rootElement, true)
@@ -848,8 +849,8 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
 
 // TODO: handle errors without broadcasting
     protected def sendError(AnnotationException exception, String username) {
-        log.debug "excrption ${exception}"
-        log.debug "excrption message ${exception.message}"
+        log.debug "exception ${exception}"
+        log.debug "exception message ${exception.message}"
         log.debug "username ${username}"
 
         JSONObject errorObject = new JSONObject()
@@ -872,7 +873,6 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         if (events.length == 0) {
             return;
         }
-        //sendAnnotationEvent(events)
         JSONArray operations = new JSONArray();
         for (AnnotationEvent event : events) {
             JSONObject features = event.getFeatures();

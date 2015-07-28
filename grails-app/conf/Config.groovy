@@ -153,8 +153,8 @@ log4j.main = {
 
 
     // enable logging of our webapollo instance (uncomment debug for extensive output)
-    warn 'grails.app'
-    debug 'grails.app'
+	warn 'grails.app'
+//    debug 'grails.app'
 
     // more find grained logging
     //trace 'org.hibernate.type'
@@ -162,18 +162,12 @@ log4j.main = {
     //debug 'grails.app'
     //debug 'grails.app.controllers.org.bbop.apollo'
     //debug 'grails.app.controllers.org.bbop.apollo.JbrowseController'
+//    debug 'grails.app.services.org.bbop.apollo.FeatureService'
     //info  'grails.app.services'
-    //debug 'grails.app.controllers.edu.uoregon.nic.nemo.portal'
     //debug 'grails.app.jobs'
     //debug 'grails.app.taglib'
-    //debug 'grails.app.taglib.edu.uoregon.nic.nemo.portal'
     //debug 'grails.app.controllers'
     //debug 'grails.app.services'
-    //debug 'grails.app.services.edu.uoregon.nic.nemo.portal.OntologyService'
-    //debug 'grails.app.services.edu.uoregon.nic.nemo.portal.DataStubService'
-    //debug 'grails.app.services.edu.uoregon.nic.nemo.portal.UserService'
-    //debug 'grails.app.controllers.edu.uoregon.nic.nemo.portal'
-    //debug 'grails.app.controllers.edu.uoregon.nic.nemo.portal.TermController'
 }
 
 //grails.gorm.default.constraints = {
@@ -271,11 +265,12 @@ apollo {
             ['label': "Canned Comments", 'link': "/cannedComment/"]
             ,['label': "Feature Types", 'link': "/featureType/"]
             ,['label': "Statuses", 'link': "/availableStatus/"]
-            ,['label': "Report::Organisms", 'link': "/organism/report/"]
-            ,['label': "Report::Sequences", 'link': "/sequence/report/"]
-            ,['label': "Report::Annotator", 'link': "/annotator/report/"]
-            ,['label': "System Info", 'link': "/home/systemInfo/"]
-//            ,['label': "Report::Changes", 'link': "/annotator/changes/"]
+            ,['label': "Report::Organisms", 'link': "/organism/report/",'type':"report"]
+            ,['label': "Report::Sequences", 'link': "/sequence/report/",'type':"report"]
+            ,['label': "Report::Annotator", 'link': "/annotator/report/",'type':"report"]
+            ,['label': "Report::Changes", 'link': "/featureEvent/changes/",'type':"report"]
+            ,['label': "System Info", 'link': "/home/systemInfo/",'type':"report"]
+            ,['label': "Performance Metrics", 'link': "/home/metrics/",'type':"report"]
     ]
 
     // customize new tabs on the annotator panel with these links

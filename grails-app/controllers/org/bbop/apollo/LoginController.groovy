@@ -1,6 +1,7 @@
 package org.bbop.apollo
 
 import grails.converters.JSON
+import org.apache.catalina.security.SecurityUtil
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.AuthenticationException
 import org.apache.shiro.authc.IncorrectCredentialsException
@@ -11,14 +12,17 @@ import org.apache.shiro.session.Session
 import org.apache.shiro.subject.Subject
 import org.apache.shiro.web.util.SavedRequest
 import org.apache.shiro.web.util.WebUtils
+import org.bbop.apollo.gwt.shared.FeatureStringEnum
 import org.codehaus.groovy.grails.web.json.JSONException
 import org.codehaus.groovy.grails.web.json.JSONObject
+import org.springframework.messaging.handler.annotation.SendTo
 
 import javax.servlet.http.HttpServletResponse
 
 class LoginController extends AbstractApolloController {
 
     def permissionService
+    def brokerMessagingTemplate
 
     def index() {}
 
@@ -66,7 +70,6 @@ class LoginController extends AbstractApolloController {
             log.error "Can only register admins if no users ${User.count} or user is admin"
             throw new AnnotationException("Can only register admins if no users ${User.count} or user is admin")
         }
-        log.debug "doing the register ${params}"
         def jsonObj = request.JSON
         if(!jsonObj){
             jsonObj = JSON.parse(params.data)
@@ -94,7 +97,6 @@ class LoginController extends AbstractApolloController {
      * @return
      */
     def login(){
-        log.debug "doing the login ${params}"
         def jsonObj = request.JSON
         if(!jsonObj){
             jsonObj = JSON.parse(params.data)
@@ -197,11 +199,22 @@ class LoginController extends AbstractApolloController {
     }
 
 
-
     def logout(){
         log.debug "LOGOUT SESSION ${SecurityUtils?.subject?.getSession(false)?.id}"
+        sendLogout(SecurityUtils.subject.principal)
         SecurityUtils.subject.logout()
         render new JSONObject() as JSON
     }
-    
+
+    @SendTo("/topic/AnnotationNotification")
+    def sendLogout(String username ) {
+        User user = User.findByUsername(username)
+        println "sending logout for ${user} via ${username}"
+        JSONObject jsonObject = new JSONObject()
+        jsonObject.put(FeatureStringEnum.USERNAME.value,username)
+        jsonObject.put(AbstractApolloController.REST_OPERATION,"logout")
+        println "sending to: '/topic/AnnotationNotification/user/' + ${user.id}"
+        brokerMessagingTemplate.convertAndSend "/topic/AnnotationNotification/user/" + user.id , jsonObject.toString()
+        return jsonObject.toString()
+    }
 }

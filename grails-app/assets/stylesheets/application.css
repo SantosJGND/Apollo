@@ -12,3 +12,12 @@
 *= require_self
 *= require bootstrap
 */
+
+.apollo-header{
+   background-color: #396494;
+   padding-left: 12px;
+}
+
+.apollo-dropdown{
+   background-color: #396494;
+}

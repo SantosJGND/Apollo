@@ -33,12 +33,8 @@ class Feature implements Ontological{
     Status status
     boolean isAnalysis;
     boolean isObsolete;
-
     Date dateCreated;
     Date lastUpdated ;
-//    Feature owner
-//    Date timeAccessioned;
-//    Date timeLastModified;
 
     static hasMany = [
             featureLocations: FeatureLocation
@@ -56,17 +52,18 @@ class Feature implements Ontological{
     ]
 
     static mappedBy = [
-            parentFeatureRelationships: 'parentFeature'
-            ,childFeatureRelationships: 'childFeature'
-            ,featureGenotypes: "feature"
-            ,featureLocations: "feature"
+            parentFeatureRelationships: "parentFeature",
+            childFeatureRelationships: "childFeature",
+            featureGenotypes: "feature",
+            featureLocations: "feature"
     ]
     
     static mapping = {
-        childFeatureRelationships cascade: 'all-delete-orphan'
-        parentFeatureRelationships cascade: 'all-delete-orphan'
-        featureLocations cascade: 'all-delete-orphan'
+            childFeatureRelationships cascade: 'all-delete-orphan'
+            parentFeatureRelationships cascade: 'all-delete-orphan'
+            featureLocations cascade: 'all-delete-orphan'
     }
+
 
     static belongsTo = [
             User
@@ -81,7 +78,6 @@ class Feature implements Ontological{
 
 
     public boolean equals(Object other) {
-//        if ( (this == other ) ) return true;
         if ( (other == null ) ) return false;
         if ( !(other instanceof Feature) ) return false;
         Feature castOther = ( Feature ) other;
@@ -92,25 +88,14 @@ class Feature implements Ontological{
 
     public int hashCode() {
         int result = 17;
-
-
         result = 37 * result + ( ontologyId == null ? 0 : this.ontologyId.hashCode() );
-
-//        result = 37 * result + (() == null ? 0 : this.getOrganism().hashCode() );
-
         result = 37 * result + ( getUniqueName() == null ? 0 : this.getUniqueName().hashCode() );
-
-
-
         return result;
     }
 
     public Feature generateClone() {
-//        Feature cloned = new Feature();
         Feature cloned = this.getClass().newInstance()
-//        cloned.type = this.type;
         cloned.dbxref = this.dbxref;
-//        cloned.organism = this.organism;
         cloned.name = this.name;
         cloned.uniqueName = this.uniqueName;
         cloned.sequenceLength = this.sequenceLength;
@@ -134,12 +119,6 @@ class Feature implements Ontological{
 
 
 
-//    @Override
-//    public String toString() {
-//        return String.format("%s (%s)", getUniqueName(), ontologyId);
-//    }
-
-
 
     /** Convenience method for retrieving the location.  Assumes that it only contains a single
      *  location so it returns the first (and hopefully only) location from the collection of
@@ -161,19 +140,6 @@ class Feature implements Ontological{
     }
 
 
-    /** Convenience method for setting the location.  Assumes that it only contains a single
-     *  location so the previous location will be removed.
-     *
-     *  @param featureLocation - new FeatureLocation to set this gene to
-     */
-    public void setOnlyFeatureLocation(FeatureLocation featureLocation) {
-        Collection<FeatureLocation> locs = getFeatureLocations();
-        if (locs != null) {
-            locs.clear();
-        }
-        featureLocations.add(featureLocation)
-//        feature.addFeatureLocation(featureLocation);
-    }
 
 
     /** Convenience method for retrieving the location.  Assumes that it only contains a single

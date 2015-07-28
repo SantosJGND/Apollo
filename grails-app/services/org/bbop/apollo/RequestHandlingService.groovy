@@ -1,31 +1,27 @@
 package org.bbop.apollo
 
-import grails.async.Promise
-import org.bbop.apollo.gwt.shared.FeatureStringEnum
-
 import grails.converters.JSON
+import grails.transaction.Transactional
+import org.bbop.apollo.event.AnnotationEvent
+import org.bbop.apollo.gwt.shared.FeatureStringEnum
+import org.bbop.apollo.gwt.shared.PermissionEnum
 
 //import grails.compiler.GrailsCompileStatic
-import grails.transaction.Transactional
-import grails.transaction.NotTransactional
-import org.bbop.apollo.event.AnnotationEvent
-import org.bbop.apollo.gwt.shared.PermissionEnum
 import org.bbop.apollo.history.FeatureOperation
 import org.codehaus.groovy.grails.web.json.JSONArray
 import org.codehaus.groovy.grails.web.json.JSONException
 import org.codehaus.groovy.grails.web.json.JSONObject
+import org.grails.plugins.metrics.groovy.Timed
 
 /**
  * This class is responsible for handling JSON requests from the AnnotationEditorController and routing
  * to the proper service classes.
  *
- * Its goal is to replace a a lot of the layers in AnnotationEditorController
+ * It's goal is to replace a a lot of the layers in AnnotationEditorController
  *
  * Furthermore, this handles requests for websocket, which come in via a different mechanism than the controller
  */
-//@GrailsCompileStatic
 @Transactional
-//class RequestHandlingService implements  AnnotationListener{
 class RequestHandlingService {
 
     public static String REST_SEQUENCE_ALTERNATION_EVENT = "sequenceAlterationEvent"
@@ -46,24 +42,12 @@ class RequestHandlingService {
 
 
     def brokerMessagingTemplate
-
-
-    List<String> viewableAnnotationList = new ArrayList<>()
-
-    public RequestHandlingService() {
-        viewableAnnotationList.clear()
-        viewableAnnotationList.add(Gene.class.canonicalName)
-        viewableAnnotationList.add(Pseudogene.class.canonicalName)
-        viewableAnnotationList.add(RepeatRegion.class.canonicalName)
-        viewableAnnotationList.add(TransposableElement.class.canonicalName)
-    }
-
-    // TODO: make a grails singleton
-//    DataListenerHandler dataListenerHandler = DataListenerHandler.getInstance()
-
-//    public RequestHandlingService(){
-//        dataListenerHandler.addDataStoreChangeListener(this);
-//    }
+    public static List<String> viewableAnnotationList = [
+            Gene.class.name,
+            Pseudogene.class.name,
+            RepeatRegion.class.name,
+            TransposableElement.class.name
+    ]
 
     private String underscoreToCamelCase(String underscore) {
         if (!underscore || underscore.isAllWhitespace()) {
@@ -87,22 +71,11 @@ class RequestHandlingService {
             String symbolString = jsonFeature.getString(FeatureStringEnum.SYMBOL.value);
             if (!sequence) sequence = feature.getFeatureLocation().getSequence()
             permissionService.checkPermissions(inputObject, sequence.organism, PermissionEnum.WRITE)
-//            Symbol symbol = feature.symbol
-//            if (!symbol) {
-//                symbol = new Symbol(
-//                        value: symbolString
-//                        , feature: feature
-//                ).save()
-//            } else {
-//                symbol.value = symbolString
-//                symbol.save()
-//            }
 
             feature.symbol = symbolString
             feature.save(flush: true, failOnError: true)
 
             updateFeatureContainer = wrapFeature(updateFeatureContainer, feature)
-//            updateFeatureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature));
         }
 
 
@@ -129,22 +102,10 @@ class RequestHandlingService {
             if (!sequence) sequence = feature.getFeatureLocation().getSequence()
             permissionService.checkPermissions(inputObject, sequence.organism, PermissionEnum.WRITE)
 
-//            Description description = feature.description
-//            if (!description) {
-//                description = new Description(
-//                        value: descriptionString
-//                        , feature: feature
-//                ).save()
-//            } else {
-//                description.value = descriptionString
-//                description.save()
-//            }
 
             feature.description = descriptionString
             feature.save(flush: true, failOnError: true)
 
-            // TODO: need to fire
-//            updateFeatureContainer = wrapFeature(updateFeatureContainer,feature)
             updateFeatureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature));
         }
 //        if (sequence) {
@@ -218,7 +179,6 @@ class RequestHandlingService {
     }
 
     /**
-     *{ "track": "GroupUn4254", "features": [ { "uniquename": "19c39835-d10c-4ed3-a90c-c6608a49d5af", "old_dbxrefs": [ { "db": "aaa", "accession": "111" } ], "new_dbxrefs": [ { "db": "mmmm", "accession": "111" } ] } ], "operation": "update_non_primary_dbxrefs" }* @param inputObject
      * @return
      */
     def updateNonPrimaryDbxrefs(JSONObject inputObject) {
@@ -248,7 +208,6 @@ class RequestHandlingService {
                 log.error("could not find original dbxref: " + oldDbXrefJSONObject)
             }
 
-//            DB newDB = DB.findOrSaveByName(newDbXrefJSONObject.getString(FeatureStringEnum.DB.value))
             oldDbXref.db = DB.findOrSaveByName(newDbXrefJSONObject.getString(FeatureStringEnum.DB.value))
             oldDbXref.accession = newDbXrefJSONObject.getString(FeatureStringEnum.ACCESSION.value)
 
@@ -538,6 +497,7 @@ class RequestHandlingService {
         return updateFeatureContainer
     }
 
+    @Timed
     @Transactional(readOnly = true)
     JSONObject getFeatures(JSONObject inputObject) {
 
@@ -573,26 +533,30 @@ class RequestHandlingService {
             }
         }
 
+
+
         JSONArray jsonFeatures = new JSONArray()
         featureSet.each { feature ->
-            JSONObject jsonObject = featureService.convertFeatureToJSON(feature, false)
-            jsonFeatures.put(jsonObject)
+                JSONObject jsonObject = featureService.convertFeatureToJSON(feature, false)
+                jsonFeatures.put(jsonObject)
         }
 
-        inputObject.put(AnnotationEditorController.REST_FEATURES, jsonFeatures)
 
         durationInMilliseconds = System.currentTimeMillis()-start;
-
         log.debug "convert to json ${durationInMilliseconds}"
+
+
+        inputObject.put(AnnotationEditorController.REST_FEATURES, jsonFeatures)
         return inputObject
 
     }
 
     /**
-     * First feature is transcript . . . all the first must be exons to add
+     * First feature is transcript, and the rest must be exons to add
      * @param inputObject
      * @return
      */
+    @Timed
     JSONObject addExon(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         String uniqueName = features.getJSONObject(0).getString(FeatureStringEnum.UNIQUENAME.value);
@@ -613,9 +577,7 @@ class RequestHandlingService {
             }
 
             transcriptService.addExon(transcript, gsolExon)
-
             featureService.calculateCDS(transcript)
-
             nonCanonicalSplitSiteService.findNonCanonicalAcceptorDonorSpliceSites(transcript)
 
             gsolExon.save()
@@ -646,9 +608,9 @@ class RequestHandlingService {
 
     }
 
+    @Timed
     JSONObject addTranscript(JSONObject inputObject) {
         JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
-
         JSONObject returnObject = createJSONFeatureContainer()
 
         log.info "addTranscript ${inputObject?.size()}"
@@ -712,6 +674,7 @@ class RequestHandlingService {
      * Transcript is the first object
      * @param inputObject
      */
+    @Timed
     JSONObject setTranslationStart(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         JSONObject transcriptJSONObject = features.getJSONObject(0);
@@ -752,6 +715,7 @@ class RequestHandlingService {
      * Transcript is the first object
      * @param inputObject
      */
+    @Timed
     JSONObject setTranslationEnd(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         JSONObject transcriptJSONObject = features.getJSONObject(0);
@@ -776,9 +740,6 @@ class RequestHandlingService {
         featureEventService.addNewFeatureEvent(setEnd ? FeatureOperation.SET_TRANSLATION_END : FeatureOperation.UNSET_TRANSLATION_END, transcriptService.getGene(transcript).name, transcript.uniqueName, inputObject, transcriptJSONObject, newJSONObject, permissionService.getCurrentUser(inputObject))
         JSONObject featureContainer = createJSONFeatureContainer(newJSONObject);
 
-//        out.write(createJSONFeatureContainer(JSONUtil.convertBioFeatureToJSON(getTopLevelFeatureForTranscript(transcript))).toString());
-//        JSONObject featureContainer = createJSONFeatureContainer(featureService.convertFeatureToJSON(transcript, false));
-//        fireDataStoreChange(featureContainer, track, DataStoreChangeEvent.Operation.UPDATE);
 
         if (sequence) {
             AnnotationEvent annotationEvent = new AnnotationEvent(
@@ -792,6 +753,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def setReadthroughStopCodon(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         JSONObject transcriptJSONObject = features.getJSONObject(0);
@@ -823,6 +785,7 @@ class RequestHandlingService {
         return returnObject
     }
 
+    @Timed
     def setAcceptor(JSONObject inputObject, boolean upstreamDonor) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
@@ -871,6 +834,7 @@ class RequestHandlingService {
     }
 
 
+    @Timed
     def setDonor(JSONObject inputObject, boolean upstreamDonor) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
@@ -917,6 +881,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     JSONObject setLongestOrf(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         JSONObject transcriptJSONObject = features.getJSONObject(0);
@@ -947,6 +912,7 @@ class RequestHandlingService {
      * @param inputObject
      * @return
      */
+    @Timed
     JSONObject setExonBoundaries(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
 
@@ -1013,6 +979,7 @@ class RequestHandlingService {
         return returnObject
     }
 
+    @Timed
     JSONObject setBoundaries(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
 
@@ -1040,7 +1007,7 @@ class RequestHandlingService {
             feature.save()
 
             JSONObject newJsonFeature = featureService.convertFeatureToJSON(feature, false)
-            returnObject.getJSONArray("features").put(newJsonFeature);
+            returnObject.getJSONArray(FeatureStringEnum.FEATURES.value).put(newJsonFeature);
             featureEventService.addNewFeatureEvent(FeatureOperation.SET_BOUNDARIES, feature.name, feature.uniqueName, inputObject, oldJsonFeature, newJsonFeature, permissionService.getCurrentUser(inputObject))
         }
 
@@ -1074,13 +1041,10 @@ class RequestHandlingService {
 
     void handleChangeEvent(AnnotationEvent event) {
 
-//        log.debug "handingling event ${events.length}"
         if (!event) {
             return;
         }
-//        log.debug "handling first event ${events[0] as JSON}"
         JSONArray operations = new JSONArray();
-//        for (AnnotationEvent event : events) {
         JSONObject features = event.getFeatures();
         try {
             features.put(AnnotationEditorController.REST_OPERATION, event.getOperation().name());
@@ -1090,12 +1054,12 @@ class RequestHandlingService {
         catch (JSONException e) {
             log.error("error handling change event ${event}: ${e}")
         }
-//        }
 
         sendAnnotationEvent(operations.toString(), event.sequence);
 
     }
 
+    @Timed
     private JSONObject createJSONFeatureContainerFromFeatures(Feature... features) throws JSONException {
         def jsonObjects = new ArrayList()
         for (Feature feature in features) {
@@ -1105,6 +1069,7 @@ class RequestHandlingService {
         return createJSONFeatureContainer(jsonObjects as JSONObject[])
     }
 
+    @Timed
     JSONObject createJSONFeatureContainer(JSONObject... features) throws JSONException {
         JSONObject jsonFeatureContainer = new JSONObject();
         JSONArray jsonFeatures = new JSONArray();
@@ -1115,6 +1080,7 @@ class RequestHandlingService {
         return jsonFeatureContainer;
     }
 
+    @Timed
     JSONObject deleteSequenceAlteration(JSONObject inputObject) {
         JSONObject updateFeatureContainer = createJSONFeatureContainer();
         JSONObject deleteFeatureContainer = createJSONFeatureContainer();
@@ -1159,6 +1125,7 @@ class RequestHandlingService {
     }
 
 //    { "track": "GroupUn4157", "features": [ { "location": { "fmin": 1284, "fmax": 1284, "strand": 1 }, "type": {"name": "insertion", "cv": { "name":"sequence" } }, "residues": "ATATATA" } ], "operation": "add_sequence_alteration" }
+    @Timed
     def addSequenceAlteration(JSONObject inputObject) {
         JSONObject updateFeatureContainer = createJSONFeatureContainer();
         JSONObject addFeatureContainer = createJSONFeatureContainer();
@@ -1272,7 +1239,7 @@ class RequestHandlingService {
                 // a NonReservedProperty will always have a tag
                 FeatureProperty featureProperty = FeatureProperty.findByTagAndValueAndFeature(tagString, valueString, feature)
                 if (featureProperty) {
-                    log.info "found the feature property . . . now we remvoe it!"
+                    log.info "Removing feature property"
                     feature.removeFromFeatureProperties(featureProperty)
                     feature.save()
                     featureProperty.delete(flush: true)
@@ -1312,7 +1279,6 @@ class RequestHandlingService {
                 } else {
                     log.error("No feature property found for tag ${oldTag} and value ${oldValue} for feature ${feature}")
                 }
-//                editor.updateNonReservedProperty(feature, oldProperty.getString("tag"), oldProperty.getString("value"), newProperty.getString("tag"), newProperty.getString("value"));
             }
             updateFeatureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature));
 
@@ -1328,9 +1294,6 @@ class RequestHandlingService {
         for (int i = 0; i < features.length(); ++i) {
             JSONObject jsonFeature = features.getJSONObject(i);
             Feature feature = Feature.findByUniqueName(jsonFeature.getString(FeatureStringEnum.UNIQUENAME.value))
-//            if (!feature.getOwner().getOwner().equals(username) && (permission & Permission.ADMIN) == 0) {
-//                throw new AnnotationEditorServiceException("Cannot lock someone else's annotation");
-//            }
             if (FeatureProperty.findByFeatureAndValue(feature, FeatureStringEnum.LOCKED.value)) {
                 log.error("Feature ${feature.name} already locked")
             } else {
@@ -1365,9 +1328,6 @@ class RequestHandlingService {
         for (int i = 0; i < features.length(); ++i) {
             JSONObject jsonFeature = features.getJSONObject(i);
             Feature feature = Feature.findByUniqueName(jsonFeature.getString(FeatureStringEnum.UNIQUENAME.value))
-//            if (!feature.getOwner().getOwner().equals(username) && (permission & Permission.ADMIN) == 0) {
-//                throw new AnnotationEditorServiceException("Cannot lock someone else's annotation");
-//            }
             FeatureProperty featureProperty = FeatureProperty.findByFeatureAndValue(feature, FeatureStringEnum.LOCKED.value)
             if (featureProperty) {
                 feature.removeFromFeatureProperties(featureProperty)
@@ -1391,6 +1351,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def flipStrand(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
         JSONObject featureContainer = createJSONFeatureContainer();
@@ -1408,7 +1369,6 @@ class RequestHandlingService {
                 feature = featureService.flipStrand(feature)
                 featureEventService.addNewFeatureEventWithUser(FeatureOperation.FLIP_STRAND, feature.name, feature.uniqueName, inputObject, featureService.convertFeatureToJSON(feature), permissionService.getCurrentUser(inputObject))
             }
-//            featureEventService.addNewFeatureEvent(FeatureOperation.FLIP_STRAND, feature, inputObject, permissionService.getCurrentUser(inputObject))
             featureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature, false));
         }
 
@@ -1424,6 +1384,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def mergeExons(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
 
@@ -1457,6 +1418,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def splitExon(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
 
@@ -1470,7 +1432,6 @@ class RequestHandlingService {
 
         Exon splitExon = exonService.splitExon(exon, exonLocation.getInt(FeatureStringEnum.FMAX.value), exonLocation.getInt(FeatureStringEnum.FMIN.value))
         featureService.updateNewGsolFeatureAttributes(splitExon, sequence)
-//        transcript.attach()
         featureService.calculateCDS(transcript)
         nonCanonicalSplitSiteService.findNonCanonicalAcceptorDonorSpliceSites(transcript)
 
@@ -1500,6 +1461,7 @@ class RequestHandlingService {
      * Subsequence objects are exons
      * @param inputObject
      */
+    @Timed
     def deleteExon(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
 
@@ -1528,6 +1490,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def addFeature(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
         log.debug "adding sequence with found sequence ${sequence}"
@@ -1615,6 +1578,7 @@ class RequestHandlingService {
      *  From AnnotationEditorService
      */
 //    { "track": "Group1.3", "features": [ { "uniquename": "179e77b9-9329-4633-9f9e-888e3cf9b76a" } ], "operation": "delete_feature" }:
+    @Timed
     def deleteFeature(JSONObject inputObject) {
         log.debug "in delete feature ${inputObject as JSON}"
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
@@ -1717,7 +1681,9 @@ class RequestHandlingService {
                             fireAnnotationEvent(annotationEvent)
                         }
                     } else {
+                        featureRelationshipService.removeFeatureRelationship(gene,transcript)
                         featureRelationshipService.deleteFeatureAndChildren(transcript)
+//                        gene.save(flush: true)
                         gene.save()
 
                         if (!suppressEvents) {
@@ -1804,6 +1770,7 @@ class RequestHandlingService {
         return createJSONFeatureContainer()
     }
 
+    @Timed
     def makeIntron(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
 
@@ -1850,6 +1817,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def splitTranscript(JSONObject inputObject) {
         JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
@@ -2020,6 +1988,7 @@ class RequestHandlingService {
         return returnContainer
     }
 
+    @Timed
     def mergeTranscripts(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
 
@@ -2036,7 +2005,7 @@ class RequestHandlingService {
         String transcript2UniqueName = transcript2.uniqueName
 
         JSONObject transcript2JSONObject = featureService.convertFeatureToJSON(transcript2)
-//        // cannot merge transcripts from different strands
+        // cannot merge transcripts from different strands
         if (!transcript1.getStrand().equals(transcript2.getStrand())) {
             throw new AnnotationException("You cannot merge transcripts on opposite strands");
         }
@@ -2093,7 +2062,7 @@ class RequestHandlingService {
         return returnObject
     }
 
-
+    @Timed
     def duplicateTranscript(JSONObject inputObject) {
         Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
 
@@ -2116,6 +2085,7 @@ class RequestHandlingService {
         return featureContainer
     }
 
+    @Timed
     def undo(JSONObject inputObject) {
         JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
@@ -2131,6 +2101,7 @@ class RequestHandlingService {
         return new JSONObject()
     }
 
+    @Timed
     def redo(JSONObject inputObject) {
         JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         permissionService.checkPermissions(inputObject, PermissionEnum.WRITE)
