@@ -78,7 +78,11 @@ public class BlastConvertCommandLine extends SequenceSearchTool {
         String outputArg = dir.getAbsolutePath() + "/results.tab";
         String outputXml = dir.getAbsolutePath() + "/results.xml";
         String outputGff = dir.getAbsolutePath() + "/results.gff";
+        String name = dir.getName();
         List<String> commands = new ArrayList<String>();
+
+
+
         commands.add(blastBin);
         commands.add("-db");
         commands.add(databaseArg);
@@ -92,20 +96,7 @@ public class BlastConvertCommandLine extends SequenceSearchTool {
             }
         }
 
-        ProcessBuilder pb = new ProcessBuilder(commands);
-        Process p = pb.start();
-        p.waitFor();
-        String line;
-        BufferedReader stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        while ((line = stdout.readLine()) != null) {
-            log.println(line);
-        }
-        log.println();
-        BufferedReader stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        while ((line = stderr.readLine()) != null) {
-            log.println(line);
-        }
-        p.destroy();
+        runCommand(commands,log);
 
 
         commands.clear();
@@ -125,27 +116,14 @@ public class BlastConvertCommandLine extends SequenceSearchTool {
         }
 
 
-        pb = new ProcessBuilder(commands);
-        p = pb.start();
-        p.waitFor();
-        stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        while ((line = stdout.readLine()) != null) {
-            log.println(line);
-        }
-        log.println();
-        stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        while ((line = stderr.readLine()) != null) {
-            log.println(line);
-        }
-        log.close();
-        p.destroy();
+        runCommand(commands,log);
         Collection<BlastAlignment> matches = new ArrayList<BlastAlignment>();
         BufferedReader in = new BufferedReader(new FileReader(outputArg));
+        String line;
         while ((line = in.readLine()) != null) {
             matches.add(new TabDelimittedAlignment(line));
         }
         in.close();
-
 
 
         commands.clear();
@@ -163,26 +141,46 @@ public class BlastConvertCommandLine extends SequenceSearchTool {
         commands.add("--output");
         commands.add(outputGff);
 
+        runCommand(commands,log);
+
+        commands.clear();
 
 
-        pb = new ProcessBuilder(commands);
-        p = pb.start();
+        System.out.println(name);
+        commands.add("flatfile-to-json.pl");
+        commands.add("--gff");
+        commands.add(outputGff);
+        commands.add("--trackLabel");
+        commands.add(name);
+        commands.add("--out");
+        commands.add("/opt/apollo/honeybee/data");
+
+        runCommand(commands,log);
+
+
+        return matches;
+    }
+
+
+    public void runCommand(List<String> commands,PrintWriter log) throws IOException,InterruptedException {
+
+        ProcessBuilder pb = new ProcessBuilder(commands);
+        Process p = pb.start();
         p.waitFor();
-        stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line;
+        BufferedReader stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
         log.println("stdout:");
         while ((line = stdout.readLine()) != null) {
             log.println(line);
         }
         log.println();
-        stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
         log.println("stderr:");
+        BufferedReader stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
         while ((line = stderr.readLine()) != null) {
             log.println(line);
         }
-        log.close();
         p.destroy();
 
-        return matches;
     }
 
     private void deleteTmpDir(File dir) {
