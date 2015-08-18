@@ -45,7 +45,16 @@ try {
 }
 
 
-URL url = new URL(options.url)
+def s=options.destinationurl
+if (s.endsWith("/")) {
+    s = s.substring(0, s.length() - 1);
+}
+
+URL url = new URL(s)
+
+def client = new RESTClient(options.destinationurl)
+
+String fullPath = "${url.path}/organism/addOrganism"
 
 def argumentsArray = [
         commonName: options.name,
@@ -60,8 +69,6 @@ def argumentsArray = [
 println "arguments array = ${argumentsArray}"
 
 def client = new RESTClient(options.url)
-
-String fullPath = "${url.path}/organism/addOrganism"
 
 def resp = client.post(
         contentType: 'text/javascript',
