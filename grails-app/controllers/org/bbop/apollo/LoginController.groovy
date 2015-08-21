@@ -97,37 +97,37 @@ class LoginController extends AbstractApolloController {
      * @return
      */
     def login(){
-        def jsonObj = request.JSON
-        if(!jsonObj){
-            jsonObj = JSON.parse(params.data)
-            log.debug "jsonObj ${jsonObj}"
-        }
-        log.debug "login -> the jsonObj ${jsonObj}"
-        String username = jsonObj.username
-        String password = jsonObj.password
-        Boolean rememberMe = jsonObj.rememberMe
-
-        def authToken = new UsernamePasswordToken(username, password as String)
-
-        // Support for "remember me"
-        if (rememberMe) {
-            authToken.rememberMe = true
-        }
-        log.debug "rememberMe: ${rememberMe}"
-        log.debug "authToken : ${authToken.rememberMe}"
-
-        // If a controller redirected to this page, redirect back
-        // to it. Otherwise redirect to the root URI.
-        def targetUri = params.targetUri ?: "/"
-
-        // Handle requests saved by Shiro filters.
-        SavedRequest savedRequest = WebUtils.getSavedRequest(request)
-        if (savedRequest) {
-            targetUri = savedRequest.requestURI - request.contextPath
-            if (savedRequest.queryString) targetUri = targetUri + '?' + savedRequest.queryString
-        }
-
         try {
+            def jsonObj = request.JSON
+            if(!jsonObj){
+                jsonObj = JSON.parse(params.data)
+                log.debug "jsonObj ${jsonObj}"
+            }
+            log.debug "login -> the jsonObj ${jsonObj}"
+            String username = jsonObj.username
+            String password = jsonObj.password
+            Boolean rememberMe = jsonObj.rememberMe
+
+            def authToken = new UsernamePasswordToken(username, password as String)
+
+            // Support for "remember me"
+            if (rememberMe) {
+                authToken.rememberMe = true
+            }
+            log.debug "rememberMe: ${rememberMe}"
+            log.debug "authToken : ${authToken.rememberMe}"
+
+            // If a controller redirected to this page, redirect back
+            // to it. Otherwise redirect to the root URI.
+            def targetUri = params.targetUri ?: "/"
+
+            // Handle requests saved by Shiro filters.
+            SavedRequest savedRequest = WebUtils.getSavedRequest(request)
+            if (savedRequest) {
+                targetUri = savedRequest.requestURI - request.contextPath
+                if (savedRequest.queryString) targetUri = targetUri + '?' + savedRequest.queryString
+            }
+
 
             // Perform the actual login. An AuthenticationException
             // will be thrown if the username is unrecognised or the
@@ -192,9 +192,13 @@ class LoginController extends AbstractApolloController {
             if (jsonObj.targetUri) {
                 m["targetUri"] = jsonObj.targetUri
             }
-            m.error="Unknown authentication erro"
+            m.error="Unknown authentication error"
             render m as JSON
             //unexpected condition - error?
+        }
+        catch ( Exception e ) {
+            def error=[error: e.message]
+            render error as JSON
         }
     }
 

@@ -1,11 +1,21 @@
+## 2.0.1
 
+Features
+
++ Make the pagination for the annotator sidebar more intuitive by only loading the remainder of rows on the last page.
+
+
+Bugfixes
+
++ Fixed the permissions to only allow the global admin role to create and delete organisms (#542).
++ Fixed an issue with jbrowse compatibility for certain refSeqs.json files not containing length.
 
 ## 2.0.0
 
 Bugfixes
 
 + Organism panel not showing all organisms (#540).
-+ Admins for specific organisms are able to create organisms for organisms they aren't admins of (#542).
++ Admins for specific organisms have issues with giving other users permissions (#542).
 
 ## 2.0.0-RC6
 
