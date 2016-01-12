@@ -989,9 +989,9 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
                 newFeature.put(FeatureStringEnum.STATUS.value, feature.status.value)
             }
             // TODO: add the rest of the attributes
+            JSONArray properties = new JSONArray();
+            newFeature.put(FeatureStringEnum.NON_RESERVED_PROPERTIES.value, properties);
             if (configWrapperService.hasAttributes()) {
-                JSONArray properties = new JSONArray();
-                newFeature.put(FeatureStringEnum.NON_RESERVED_PROPERTIES.value, properties);
                 for (FeatureProperty property : featurePropertyService.getNonReservedProperties(feature)) {
                     JSONObject jsonProperty = new JSONObject();
                     jsonProperty.put(FeatureStringEnum.TAG.value, property.getTag());
@@ -999,9 +999,9 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
                     properties.put(jsonProperty);
                 }
             }
+            JSONArray dbxrefs = new JSONArray();
+            newFeature.put(FeatureStringEnum.DBXREFS.value, dbxrefs);
             if (configWrapperService.hasDbxrefs() || configWrapperService.hasPubmedIds() || configWrapperService.hasGoIds()) {
-                JSONArray dbxrefs = new JSONArray();
-                newFeature.put(FeatureStringEnum.DBXREFS.value, dbxrefs);
                 for (DBXref dbxref : feature.featureDBXrefs) {
                     JSONObject jsonDbxref = new JSONObject();
                     jsonDbxref.put(FeatureStringEnum.DB.value, dbxref.getDb().getName());
@@ -1009,9 +1009,9 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
                     dbxrefs.put(jsonDbxref);
                 }
             }
+            JSONArray comments = new JSONArray();
+            newFeature.put(FeatureStringEnum.COMMENTS.value, comments);
             if (configWrapperService.hasComments()) {
-                JSONArray comments = new JSONArray();
-                newFeature.put(FeatureStringEnum.COMMENTS.value, comments);
                 for (Comment comment : featurePropertyService.getComments(feature)) {
                     comments.put(comment.value);
                 }
