@@ -113,7 +113,7 @@ task installJBrowse(dependsOn: evaluateJBrowseConfigs) << {
             if (git.alwaysRecheck || git.alwaysPull && !hasBower()) {
                 if (git.tag) {
                     fetchTags(jbrowseFile)
-                    checkoutBranch(jbrowseFile, "tags/" + git.tag)
+                    checkoutBranch(jbrowseFile, git.tag)
                 } else if (git.branch) {
                     checkoutBranch(jbrowseFile, git.branch)
                 }
@@ -125,7 +125,7 @@ task installJBrowse(dependsOn: evaluateJBrowseConfigs) << {
             }
         } else {
             println "Cloning: ${git.url} into ${jbrowseDirectory}."
-            def branch = git.branch ?: (git.tag ? "tags/${git.tag}" : null)
+            def branch = git.branch ?: (git.tag ? "${git.tag}" : null)
             cloneRepo(git.url, jbrowseDirectory, branch, 1)
             if(!hasBower()) checkoutBranch(jbrowseFile, branch)
         }
@@ -191,7 +191,7 @@ task installJBrowsePlugins(dependsOn: copyApolloPlugin) << {
                 if (plugin.value.alwaysRecheck || plugin.value.alwaysPull) {
                     println "Checking out branch ${plugin.value.branch}"
                     if (plugin.value.tag) {
-                        checkoutBranch(new File(path),"tags/${plugin.value.tag}")
+                        checkoutBranch(new File(path),"${plugin.value.tag}")
                     } else if (plugin.value.branch) {
                         checkoutBranch(new File(path),plugin.value.branch)
                     }
